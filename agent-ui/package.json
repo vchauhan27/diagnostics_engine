@@ -1,0 +1,35 @@
+{
+  "name": "agent-ui",
+  "author": "Your Name",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "turbo dev --filter=web",
+    "build": "turbo build --filter=web",
+    "format": "turbo format --filter=web",
+    "lint": "turbo lint --filter=web",
+    "lint:fix": "turbo lint:fix --filter=web"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "tsx": "^4.19.1",
+    "typescript": "^5",
+    "eslint": "^9.19.0",
+    "concurrently": "^9.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@eslint/eslintrc": "^3.3.0",
+    "@typescript-eslint/parser": "^8.26.1",
+    "@tsconfig/recommended": "^1.0.8",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-no-instanceof": "^1.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "prettier": "^3.3.3"
+  },
+  "packageManager": "npm@11.2.1",
+  "overrides": {
+    "@langchain/core": "^0.3.42"
+  }
+}

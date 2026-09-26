@@ -1,0 +1,263 @@
+TC-CAM-0142 — Raw Device Log (Import Sample)
+Sample raw log for TMS import testing. Simulates a Samsung Galaxy device logcat capture for a failed camera night-mode test. Paste/import this into the TMS against TC-CAM-0142, then trigger the Diagnostics Engine.
+
+========================================================================
+TMS RAW LOG IMPORT — DEVICE DIAGNOSTIC BUNDLE
+Test Case ID: TC-CAM-0142
+Test Name: Verify_Camera_Captures_Image_In_NightMode
+Product Name: Galaxy S24 Ultra
+Device Model: SM-S928B (Galaxy S24 Ultra)
+Build Version: S928BXXU3CXH2
+Build Fingerprint: samsung/b0qxxx/b0q:14/UP1A.231005.007/S928BXXU3CXH2:user/release-keys
+Environment: QA
+One UI Version: 6.1
+Camera App Version: com.sksamsung.android.camera 14.0.02.30
+Kernel: 5.10.198-android13-4-00151-g8e2f9c1a3b7e-ab12345678
+Execution Start: 2026-08-07T03:00:04.112+0000
+Log Source: adb logcat -v threadtime (auto-captured on test failure)
+========================================================================
+ 
+08-07 03:00:04.112  1231  1231 I TestRunner: Launching test suite 'SmartCamera_RegressionSuite_Nightly'
+08-07 03:00:04.201  1231  1231 I TestRunner: Device connected via ADB - serial=R5CN90XXXXX
+08-07 03:00:04.334   612   645 D BatteryService: level=78 scale=100 status=discharging temp=312
+08-07 03:00:04.401   512   512 D WifiService: supplicant state=COMPLETED rssi=-58
+08-07 03:00:04.556   233   233 I ActivityManager: Force stopping com.sec.android.app.camera appid=10182 user=0
+08-07 03:00:04.887  1231  1231 I TestRunner: Installing app com.sec.android.app.camera v14.0.02.30
+08-07 03:00:05.012   400   455 D PackageManager: parseBaseApk: /data/app/com.sec.android.app.camera/base.apk
+08-07 03:00:06.554  1231  1231 I TestRunner: App installed successfully
+08-07 03:00:06.601   233   233 D WindowManager: displayId=0 rotation=ROTATION_0
+08-07 03:00:06.650   233   233 D KeyguardServiceDelegate: isShowing = false
+08-07 03:00:06.700   918   918 D SEMCscService: SecPhoneWindowManager onScreenOn
+08-07 03:00:06.812   233   233 D PowerManagerService: wakelock acquired tag=CameraTest uid=10182
+08-07 03:00:07.003  1231  1231 I TestRunner: Starting Test Case TC-CAM-0142
+08-07 03:00:07.045  1231  1231 I CameraTestHelper: Launching Camera app
+08-07 03:00:07.100   233   233 D NfcService: NFC-C: polling loop enabled=true (unrelated)
+08-07 03:00:07.220   980   980 D SamsungAnalytics: session started pkg=com.sec.android.app.camera
+08-07 03:00:07.334   233   233 D KnoxAuditLogService: audit event logged type=APP_LAUNCH
+08-07 03:00:07.611   233   233 D ActivityManager: START u0 {cmp=com.sec.android.app.camera/.Camera}
+08-07 03:00:07.700  2210  2210 I sec_camera: SecCamera onCreate() called
+08-07 03:00:07.812  2210  2255 D CameraStateMachine: state IDLE -> INITIALIZING
+08-07 03:00:08.001  2210  2255 D ExynosCameraHAL3: initSensor sensorId=0 orientation=90
+08-07 03:00:08.100  2210  2255 D libexynoscamera3: Exynos camera version: 4001100
+08-07 03:00:08.220  1231  1231 I TestRunner: Camera app launched, waiting for preview surface
+08-07 03:00:08.443   233   233 D SurfaceFlinger: createLayer CameraPreview#4 pid=2210
+08-07 03:00:08.556  2210  2255 D CameraProvider2-2-legacy: openCameraDevice camId=0
+08-07 03:00:08.700   400   455 D vold: fuse: opening /storage/emulated/0/DCIM (unrelated)
+08-07 03:00:08.900   233   233 D Zygote: Not starting debugger since process cannot load the jdwp agent.
+08-07 03:00:09.001   980   980 D SamsungAnalytics: event logged: camera_app_foreground
+08-07 03:00:09.112  2210  2255 W CameraHAL: camera_hal_v3: reconnecting to camera provider service
+08-07 03:00:09.220   612   645 D BatteryStatsService: noteScreenBrightness brightness=45
+08-07 03:00:09.334   918   918 D AudioService: AudioFocus request granted stream=3 pkg=com.sec.android.app.camera
+08-07 03:00:09.450   233   233 D DisplayPowerController: setBrightness 45 (ambient)
+08-07 03:00:09.501  1231  1231 I CameraTestHelper: Preview surface ready, enabling Night Mode toggle
+08-07 03:00:09.600   345   345 D SensorService: registering client ALS pkg=com.sec.android.app.camera
+08-07 03:00:09.700   345   345 I ALS: ambient_lux=0.3 (very low light - night algorithm should trigger)
+08-07 03:00:09.777  1231  1231 D UIAutomator: tap(x=612,y=2140) target=night_mode_toggle_btn
+08-07 03:00:09.999  2210  2210 I sec_camera: SecCamera onModeChanged mode=NIGHT
+08-07 03:00:10.001  1231  1231 I CameraTestHelper: Night Mode enabled = true
+08-07 03:00:10.100  2210  2255 D ExynosCameraHAL3: setParameters scene_mode=NIGHT
+08-07 03:00:10.223  2210  2255 D ExynosCameraHAL3: setParameters exposure_compensation=+2
+08-07 03:00:10.310  2210  2255 D ExynosCameraHAL3: NightShot: multi-frame count requested = 8
+08-07 03:00:10.401   918   918 D AudioService: micMute state=false
+08-07 03:00:10.556   345   345 D SensorManager: registering listener ALS (ambient light sensor)
+08-07 03:00:10.700   233   233 D InputDispatcher: publishMotionEvent action=UP
+08-07 03:00:10.789   345   345 I ALS: ambient_lux=0.4 confirmed low-light, night pipeline armed
+08-07 03:00:11.002  2210  2255 D ExynosCameraHAL3: NightModePipeline.init() called
+08-07 03:00:11.150  2210  2255 D SemMultiFrameFusion: allocateBuffer requested size=8
+08-07 03:00:11.230  2210  2255 E ExynosCameraHAL3: NightModePipeline.init() failed - null reference in SemMultiFrameFusionEngine
+08-07 03:00:11.231  2210  2255 E AndroidRuntime: FATAL EXCEPTION: CameraHalWorker
+08-07 03:00:11.231  2210  2255 E AndroidRuntime: Process: com.sec.android.app.camera, PID: 2210
+08-07 03:00:11.231  2210  2255 E AndroidRuntime: java.lang.NullPointerException: Attempt to invoke virtual method 'void com.samsung.android.camera.hal.SemMultiFrameFusionEngine.allocateBuffer(int)' on a null object reference
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at com.samsung.android.camera.hal.NightModePipeline.init(NightModePipeline.java:87)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at com.samsung.android.camera.hal.ExynosCameraHAL3.setParameters(ExynosCameraHAL3.java:412)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at com.samsung.android.camera.hal.ExynosCameraHAL3.applySceneMode(ExynosCameraHAL3.java:298)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at com.sec.android.app.camera.controller.CameraController.enableNightMode(CameraController.java:512)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at com.sec.android.app.camera.MainActivity$NightModeToggleListener.onCheckedChanged(MainActivity.java:701)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at android.widget.CompoundButton.setChecked(CompoundButton.java:216)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at android.widget.CompoundButton.performClick(CompoundButton.java:130)
+08-07 03:00:11.231  2210  2255 E AndroidRuntime:     at android.view.View.performClickInternal(View.java:7607)
+08-07 03:00:11.232  2210  2255 W ExynosCameraHAL3: NightModePipeline init failed, falling back to STANDARD scene mode
+08-07 03:00:11.245  2210  2255 D ExynosCameraHAL3: setParameters scene_mode=STANDARD (fallback)
+08-07 03:00:11.300   345   345 D SensorService: ALS listener unregister requested (unrelated cleanup)
+08-07 03:00:11.401  1231  1231 I CameraTestHelper: Triggering capture via shutter button
+08-07 03:00:11.500   918   918 D AudioService: playSound CAMERA_SHUTTER stream=1
+08-07 03:00:11.611  1231  1231 D UIAutomator: tap(x=540,y=2320) target=shutter_btn
+08-07 03:00:11.700   233   233 D InputDispatcher: publishMotionEvent action=DOWN
+08-07 03:00:11.850  2210  2255 D ExynosCameraHAL3: capture() started, mode=STANDARD (expected NIGHT)
+08-07 03:00:12.100   400   455 D vold: fuse write /storage/emulated/0/DCIM/Camera (unrelated)
+08-07 03:00:12.400   612   645 D BatteryStatsService: noteFlashlightOn (unrelated - LED metering)
+08-07 03:00:12.700  2210  2255 D libhwjpeg: jpeg encode start quality=95
+08-07 03:00:12.900  2210  2255 I ExynosCameraHAL3: capture() completed, frame written to /storage/emulated/0/DCIM/Camera/20260807_030012.jpg
+08-07 03:00:13.010  1231  1231 I CameraTestHelper: Reading EXIF metadata from captured image
+08-07 03:00:13.150   400   455 D MediaProvider: scanning new file 20260807_030012.jpg (unrelated)
+08-07 03:00:13.220  1231  1231 D ExifReader: SceneCaptureType=0 (Standard) - expected 3 (Night)
+08-07 03:00:13.221  1231  1231 E TestAssertion: Assertion FAILED
+08-07 03:00:13.221  1231  1231 E TestAssertion: Expected: SceneCaptureType == NIGHT(3)
+08-07 03:00:13.221  1231  1231 E TestAssertion: Actual:   SceneCaptureType == STANDARD(0)
+08-07 03:00:13.222  1231  1231 E TestRunner: Test Case TC-CAM-0142 FAILED at step 'VerifyNightModeAppliedToCapture'
+08-07 03:00:13.301   233   233 I ActivityManager: Process com.sec.android.app.camera (pid 2210) has died: fg TRIM_MEMORY_UI_HIDDEN
+08-07 03:00:13.302   233   233 I WindowManager: WIN DEATH: Window{a1f2c3d u0 com.sec.android.app.camera/.MainActivity}
+08-07 03:00:13.303   233   233 D dalvikvm: GC_EXPLICIT freed 1024K, 12% free 9821K/11172K
+08-07 03:00:13.401   233   233 D SurfaceFlinger: destroyLayer CameraPreview#4
+08-07 03:00:13.500  1231  1231 I TestRunner: Capturing screenshot -> failure_TC-CAM-0142_20260807_030013.png
+08-07 03:00:13.601  1231  1231 I TestRunner: Capturing full logcat dump -> logcat_TC-CAM-0142_20260807.txt (46,912 lines)
+08-07 03:00:13.650   512   512 D BluetoothAdapter: scan window closed (unrelated background service)
+08-07 03:00:13.702   512   512 D WifiService: wifi rssi=-58dBm (unrelated background service)
+08-07 03:00:13.750   980   980 D SamsungAnalytics: event logged: camera_capture_result status=fail (unrelated telemetry)
+08-07 03:00:13.800   233   233 D KnoxAuditLogService: audit event logged type=APP_CRASH (unrelated compliance log)
+08-07 03:00:13.850  1231  1231 I TestRunner: Tearing down test environment
+08-07 03:00:13.901   233   233 D PowerManagerService: wakelock released tag=CameraTest
+08-07 03:00:14.002  1231  1231 I TestRunner: Test Case TC-CAM-0142 marked FAILED, moving to next test
+08-07 03:00:14.055  1231  1231 I TestRunner: Result summary: 1 test executed, 0 passed, 1 failed
+ 
+========================================================================
+APPENDIX A: FULL SYSTEM LOGCAT DUMP (TRUNCATED FOR THIS SAMPLE)
+Full file: logcat_TC-CAM-0142_20260807.txt — 46,912 lines total
+Below is a small representative excerpt of the surrounding noise that a
+real device farm capture would include across the full dump.
+========================================================================
+08-07 03:00:01.759   612   645 D BatteryStatsService: noteScreenBrightness brightness=51
+08-07 03:00:02.030   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:14.459   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:06.094   400   455 D vold: fuse read op inode=865179
+08-07 03:00:59.387   612   645 D BatteryStatsService: noteScreenBrightness brightness=90
+08-07 03:00:02.677   612   645 D BatteryStatsService: noteScreenBrightness brightness=57
+08-07 03:00:10.379   400   455 D vold: fuse read op inode=765822
+08-07 03:00:10.473   980   980 D SamsungAnalytics: heartbeat event seq=4598
+08-07 03:00:25.274   400   455 D vold: fuse read op inode=774079
+08-07 03:00:08.252   345   345 D SensorService: gyro sample x=0.494 y=-0.143 z=9.584
+08-07 03:00:31.093    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:29.541   210   210 D ThermalService: zone=BATTERY temp=329
+08-07 03:00:07.300   400   455 D vold: fuse read op inode=624902
+08-07 03:00:58.108    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:58.000    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:03.246   980   980 D SamsungAnalytics: heartbeat event seq=2403
+08-07 03:00:42.486   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:45.319   980   980 D SamsungAnalytics: heartbeat event seq=8177
+08-07 03:00:35.235   210   210 D ThermalService: zone=BATTERY temp=301
+08-07 03:00:32.243   612   645 D BatteryStatsService: noteScreenBrightness brightness=82
+08-07 03:00:51.416   233   233 D KnoxAuditLogService: heartbeat audit tick=28
+08-07 03:00:03.412   612   645 D BatteryStatsService: noteScreenBrightness brightness=33
+08-07 03:00:55.945   980   980 D SamsungAnalytics: heartbeat event seq=2604
+08-07 03:00:10.416   980   980 D SamsungAnalytics: heartbeat event seq=4502
+08-07 03:00:18.433   233   233 D KnoxAuditLogService: heartbeat audit tick=278
+08-07 03:00:03.051   400   455 D vold: fuse read op inode=632496
+08-07 03:00:04.609   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:26.673   612   645 D BatteryStatsService: noteScreenBrightness brightness=86
+08-07 03:00:42.660   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:34.218   612   645 D BatteryStatsService: noteScreenBrightness brightness=53
+08-07 03:00:53.556   233   233 D KnoxAuditLogService: heartbeat audit tick=481
+08-07 03:00:16.118   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:32.500   345   345 D SensorService: gyro sample x=0.269 y=0.659 z=9.044
+08-07 03:00:10.759   345   345 D SensorService: gyro sample x=0.122 y=-0.776 z=9.945
+08-07 03:00:02.854    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:57.366   512   512 D WifiService: rssi update rssi=-53dBm
+08-07 03:00:55.166   980   980 D SamsungAnalytics: heartbeat event seq=1406
+08-07 03:00:17.163   980   980 D SamsungAnalytics: heartbeat event seq=1634
+08-07 03:00:14.024   980   980 D SamsungAnalytics: heartbeat event seq=6378
+08-07 03:00:43.863   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:27.353   210   210 D ThermalService: zone=BATTERY temp=307
+08-07 03:00:33.947   512   512 D WifiService: rssi update rssi=-74dBm
+08-07 03:00:46.921   612   645 D BatteryStatsService: noteScreenBrightness brightness=84
+08-07 03:00:42.962   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:38.670   210   210 D ThermalService: zone=BATTERY temp=290
+08-07 03:00:18.527   612   645 D BatteryStatsService: noteScreenBrightness brightness=62
+08-07 03:00:01.047   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:25.249   233   233 D KnoxAuditLogService: heartbeat audit tick=266
+08-07 03:00:35.255   512   512 D WifiService: rssi update rssi=-47dBm
+08-07 03:00:39.834   233   233 D KnoxAuditLogService: heartbeat audit tick=133
+08-07 03:00:53.652   980   980 D SamsungAnalytics: heartbeat event seq=8939
+08-07 03:00:20.914   400   455 D vold: fuse read op inode=324345
+08-07 03:00:21.555   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:54.901   512   512 D WifiService: rssi update rssi=-76dBm
+08-07 03:00:34.765   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:46.169   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:08.887   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:17.770   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:49.980   612   645 D BatteryStatsService: noteScreenBrightness brightness=23
+08-07 03:00:36.970   612   645 D BatteryStatsService: noteScreenBrightness brightness=79
+08-07 03:00:19.110   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:44.850   210   210 D ThermalService: zone=BATTERY temp=330
+08-07 03:00:50.042   210   210 D ThermalService: zone=BATTERY temp=306
+08-07 03:00:06.443   233   233 D KnoxAuditLogService: heartbeat audit tick=316
+08-07 03:00:49.495    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:48.475   980   980 D SamsungAnalytics: heartbeat event seq=6511
+08-07 03:00:21.286   345   345 D SensorService: gyro sample x=0.033 y=-0.618 z=9.241
+08-07 03:00:44.487   980   980 D SamsungAnalytics: heartbeat event seq=1282
+08-07 03:00:30.566   400   455 D vold: fuse read op inode=575786
+08-07 03:00:14.123   345   345 D SensorService: gyro sample x=0.486 y=0.902 z=9.69
+08-07 03:00:17.741   233   233 D KnoxAuditLogService: heartbeat audit tick=92
+08-07 03:00:45.546   512   512 D WifiService: rssi update rssi=-48dBm
+08-07 03:00:06.893   233   233 D KnoxAuditLogService: heartbeat audit tick=482
+08-07 03:00:07.841   233   233 D KnoxAuditLogService: heartbeat audit tick=416
+08-07 03:00:05.254   345   345 D SensorService: gyro sample x=0.551 y=-0.239 z=9.909
+08-07 03:00:19.582   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:11.565   980   980 D SamsungAnalytics: heartbeat event seq=1043
+08-07 03:00:44.880   345   345 D SensorService: gyro sample x=0.848 y=0.576 z=9.625
+08-07 03:00:27.117   980   980 D SamsungAnalytics: heartbeat event seq=3441
+08-07 03:00:47.844   210   210 D ThermalService: zone=BATTERY temp=314
+08-07 03:00:28.082   233   233 D KnoxAuditLogService: heartbeat audit tick=493
+08-07 03:00:37.973   210   210 D ThermalService: zone=BATTERY temp=297
+08-07 03:00:37.446   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:26.710   400   455 D vold: fuse read op inode=429795
+08-07 03:00:49.413   612   645 D BatteryStatsService: noteScreenBrightness brightness=20
+08-07 03:00:48.052   233   233 D KnoxAuditLogService: heartbeat audit tick=63
+08-07 03:00:51.245   210   210 D ThermalService: zone=BATTERY temp=340
+08-07 03:00:41.852   612   645 D BatteryStatsService: noteScreenBrightness brightness=83
+08-07 03:00:09.392    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:17.840    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:22.340   233   233 D KnoxAuditLogService: heartbeat audit tick=123
+08-07 03:00:14.876   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:31.987   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:58.467    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:39.709   400   455 D vold: fuse read op inode=432043
+08-07 03:00:55.554   233   233 D KnoxAuditLogService: heartbeat audit tick=47
+08-07 03:00:48.648   612   645 D BatteryStatsService: noteScreenBrightness brightness=76
+08-07 03:00:23.441   400   455 D vold: fuse read op inode=283573
+08-07 03:00:39.699   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:57.294   233   233 D KnoxAuditLogService: heartbeat audit tick=493
+08-07 03:00:29.865   345   345 D SensorService: gyro sample x=0.707 y=-0.787 z=9.381
+08-07 03:00:01.849   345   345 D SensorService: gyro sample x=0.132 y=0.372 z=9.745
+08-07 03:00:53.925   233   233 D KnoxAuditLogService: heartbeat audit tick=370
+08-07 03:00:40.099   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:20.765   345   345 D SensorService: gyro sample x=-0.736 y=0.079 z=9.971
+08-07 03:00:53.168   345   345 D SensorService: gyro sample x=0.493 y=-0.323 z=9.115
+08-07 03:00:55.692   980   980 D SamsungAnalytics: heartbeat event seq=2479
+08-07 03:00:37.390   345   345 D SensorService: gyro sample x=0.35 y=-0.057 z=9.62
+08-07 03:00:14.663   210   210 D ThermalService: zone=BATTERY temp=311
+08-07 03:00:06.240   612   645 D BatteryStatsService: noteScreenBrightness brightness=37
+08-07 03:00:56.424   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:54.371   980   980 D SamsungAnalytics: heartbeat event seq=9920
+08-07 03:00:05.678   233   233 D KnoxAuditLogService: heartbeat audit tick=106
+08-07 03:00:13.600    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:34.256   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:16.053   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:28.515   612   645 D BatteryStatsService: noteScreenBrightness brightness=25
+08-07 03:00:43.110   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:35.729   210   210 D ThermalService: zone=BATTERY temp=287
+08-07 03:00:46.886    77    77 D NetworkPolicy: uid=10182 policy=DEFAULT (unrelated)
+08-07 03:00:20.437   612   645 D BatteryStatsService: noteScreenBrightness brightness=52
+08-07 03:00:27.098   612   645 D BatteryStatsService: noteScreenBrightness brightness=36
+08-07 03:00:55.937   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:22.865   612   645 D BatteryStatsService: noteScreenBrightness brightness=67
+08-07 03:00:39.691   210   210 D ThermalService: zone=BATTERY temp=280
+08-07 03:00:55.146   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:26.464   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:09.161   512   512 D WifiService: rssi update rssi=-79dBm
+08-07 03:00:48.524   980   980 D SamsungAnalytics: heartbeat event seq=8043
+08-07 03:00:14.404   512   512 D WifiService: rssi update rssi=-78dBm
+08-07 03:00:07.007   400   455 D vold: fuse read op inode=685864
+08-07 03:00:04.406   400   455 D vold: fuse read op inode=550137
+08-07 03:00:18.117   918   918 D AudioService: focus poll stream=3 state=active
+08-07 03:00:27.864   612   645 D BatteryStatsService: noteScreenBrightness brightness=51
+08-07 03:00:21.797   980   980 D SamsungAnalytics: heartbeat event seq=9363
+08-07 03:00:15.105   233   233 D InputDispatcher: publishMotionEvent action=MOVE
+08-07 03:00:29.772   233   233 D KnoxAuditLogService: heartbeat audit tick=241
+08-07 03:00:50.281   345   345 D SensorService: gyro sample x=0.015 y=-0.379 z=9.452
+08-07 03:00:04.660   345   345 D SensorService: gyro sample x=-0.075 y=0.109 z=9.792
+08-07 03:00:41.192   210   210 D ThermalService: zone=BATTERY temp=325
+ 
+========================================================================
+[... additional 46,700+ lines omitted from this sample excerpt ...]
+========================================================================
+END OF LOG
