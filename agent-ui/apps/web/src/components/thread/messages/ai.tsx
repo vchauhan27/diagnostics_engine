@@ -6,7 +6,7 @@ import { BranchSwitcher, CommandBar } from "./shared";
 import { MarkdownText } from "../markdown-text";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { cn } from "@/lib/utils";
-import { ToolCalls, ToolResult } from "./tool-calls";
+import { ToolCalls, ToolResult, ToolUpdatePill } from "./tool-calls";
 import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
@@ -110,6 +110,14 @@ export function AssistantMessage({
 
   if (isToolResult && hideToolCalls) {
     return null;
+  }
+
+  // Render [Tool Update] system_update messages as compact status pills
+  if (message && (message as any).name === "system_update") {
+    const text = typeof message.content === "string" ? message.content : "";
+    if (text.startsWith("[Tool Update]")) {
+      return <ToolUpdatePill content={text} isSpinning={isLoading && isLastMessage} />;
+    }
   }
 
   return (

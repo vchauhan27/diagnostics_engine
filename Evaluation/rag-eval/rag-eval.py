@@ -32,9 +32,6 @@ from deepeval.metrics import (
 JUDGE_MODEL = cfg.get_judge_model()
 
 
-_global_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(_global_loop)
-
 async def _ainvoke(question: str, thread_id: str):
     return await agent.ainvoke(
         AgentState(messages=[HumanMessage(content=question)]),
@@ -42,15 +39,15 @@ async def _ainvoke(question: str, thread_id: str):
     )
 
 
-def run_agent(question: str, thread_id: str):
-    result = _global_loop.run_until_complete(_ainvoke(question, thread_id))
+async def run_agent(question: str, thread_id: str):
+    result = await _ainvoke(question, thread_id)
     return result["messages"] if isinstance(result, dict) else result.messages
 
 
 # Tools that do NOT represent RAG evidence retrieval (the pgvector search
 # over past defects / code changes). Adjust these names to match
 # AIAgent/agent/tools.py if they differ in your codebase.
-NON_RETRIEVAL_TOOLS = {"get_test_details", "parse_failure_log", "get_assigned_test_cases", "ask_user_jira_approval"}
+NON_RETRIEVAL_TOOLS = {"search_test_details_tool", "parse_failure_log", "ask_user_jira_approval"}
 
 
 # ---------------------------------------------------------
@@ -92,41 +89,45 @@ metrics = [
     ContextualRecallMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False),
 ]
 
-test_cases = []
+async def main():
+    test_cases = []
 
-for i, item in enumerate(TEST_CASES):
-    messages = run_agent(item["input"], thread_id=f"rag-eval-{i}")
+    for i, item in enumerate(TEST_CASES):
+        messages = await run_agent(item["input"], thread_id=f"rag-eval-{i}")
 
-    retrieval_context = [
-        str(m.content) for m in messages
-        if getattr(m, "name", None) and m.name not in NON_RETRIEVAL_TOOLS
-    ]
+        retrieval_context = [
+            str(m.content) for m in messages
+            if getattr(m, "name", None) and m.name not in NON_RETRIEVAL_TOOLS
+        ]
 
-    actual_output = messages[-1].content
-    if isinstance(actual_output, list):
-        actual_output = " ".join(b.get("text", "") for b in actual_output if isinstance(b, dict))
+        actual_output = messages[-1].content
+        if isinstance(actual_output, list):
+            actual_output = " ".join(b.get("text", "") for b in actual_output if isinstance(b, dict))
 
-    print(f"Q: {item['input']}")
-    print(f"Retrieved chunks: {len(retrieval_context)}\n")
+        print(f"Q: {item['input']}")
+        print(f"Retrieved chunks: {len(retrieval_context)}\n")
 
-    if not retrieval_context:
-        print("  Skipping RAG-context metrics (no evidence retrieval occurred).\n")
-        continue
+        if not retrieval_context:
+            print("  Skipping RAG-context metrics (no evidence retrieval occurred).\n")
+            continue
 
-    test_cases.append(
-        LLMTestCase(
-            input=item["input"],
-            actual_output=actual_output,
-            expected_output=item["expected_output"],
-            retrieval_context=retrieval_context,  # type: ignore
+        test_cases.append(
+            LLMTestCase(
+                input=item["input"],
+                actual_output=actual_output,
+                expected_output=item["expected_output"],
+                retrieval_context=retrieval_context,  # type: ignore
+            )
         )
-    )
 
-if test_cases:
-    evaluate(
-        test_cases=test_cases,
-        metrics=metrics,
-        async_config=AsyncConfig(run_async=False, throttle_value=1, max_concurrent=1),
-    )
-else:
-    print("No test cases had retrieval context to evaluate against.")
+    if test_cases:
+        evaluate(
+            test_cases=test_cases,
+            metrics=metrics,
+            async_config=AsyncConfig(run_async=False, throttle_value=1, max_concurrent=1),
+        )
+    else:
+        print("No test cases had retrieval context to evaluate against.")
+
+
+asyncio.run(main())

@@ -78,8 +78,8 @@ async def _ainvoke(question: str, thread_id: str):
     )
 
 
-def run_agent(question: str, thread_id: str) -> str:
-    result = asyncio.run(_ainvoke(question, thread_id))
+async def arun_agent(question: str, thread_id: str) -> str:
+    result = await _ainvoke(question, thread_id)
     messages = result["messages"] if isinstance(result, dict) else result.messages
     final_content = messages[-1].content
     if isinstance(final_content, list):
@@ -87,22 +87,26 @@ def run_agent(question: str, thread_id: str) -> str:
     return str(final_content)
 
 
-test_cases = []
+async def main():
+    test_cases = []
+    for i, question in enumerate(QUESTIONS):
+        # Use a unique thread_id per question to prevent cross-contamination
+        # from the checkpointer's conversation history.
+        actual_output = await arun_agent(question, thread_id=f"coherence-eval-{i}")
 
-for i, question in enumerate(QUESTIONS):
-    # Use a unique thread_id per question to prevent cross-contamination
-    # from the checkpointer's conversation history.
-    actual_output = run_agent(question, thread_id=f"coherence-eval-{i}")
+        print(f"Q: {question}")
+        print(f"A: {actual_output[:200]}...\n")
 
-    print(f"Q: {question}")
-    print(f"A: {actual_output[:200]}...\n")
-
-    test_cases.append(
-        LLMTestCase(
-            input=question,
-            actual_output=actual_output,
+        test_cases.append(
+            LLMTestCase(
+                input=question,
+                actual_output=actual_output,
+            )
         )
-    )
+    return test_cases
+
+
+test_cases = asyncio.run(main())
 
 evaluate(
     test_cases=test_cases,

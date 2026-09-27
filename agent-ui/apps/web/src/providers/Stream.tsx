@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import { type Message } from "@langchain/langgraph-sdk";
+import { type UIMessage } from "@langchain/langgraph-sdk/react-ui";
 import { useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ export type StateType = {
   check_attempts?: number;
   answer_quality_ok?: boolean | null;
   enhanced_query?: string | null;
+  ui?: UIMessage[];
 };
 
 const useTypedStream = useStream<

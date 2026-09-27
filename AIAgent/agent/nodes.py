@@ -2,6 +2,11 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, Tool
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
 import typing
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from guardrail import guardrails
 
 from .config import llm
 from .state import AgentState, JiraTicketInput, CheckDecision, DiagnosisReport, FailureInput
@@ -44,6 +49,15 @@ def submit_diagnosis(
     return ""
 
 async def agent_node(state: AgentState, config: RunnableConfig) -> dict:
+    last_msg = state.messages[-1] if state.messages else None
+
+    # 1. Guard Input
+    if last_msg and getattr(last_msg, "type", "") == "human":
+        input_result = await guardrails.a_guard_input(str(last_msg.content))
+        if input_result.breached:
+            reasons = "\n".join([f"- {v.name} ({v.safety_level}): {v.reason}" for v in input_result.verdicts])
+            return {"messages": [AIMessage(content=f"Your message was flagged by our safety system.\n\nDetails:\n{reasons}")]}
+
     system_prompt = SystemMessage(
         content=(
             "You are the central Brain of an AI Diagnostics Engine. "
@@ -51,12 +65,22 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> dict:
             "- If the user asks for test details, use the search_test_details_tool.\n"
             "- If the user wants to diagnose a failure, first ensure you have the required details (test case id, error message, etc.). Ask the user if missing.\n"
             "- Once you have the details, call start_diagnosis to launch the research loop.\n"
-            "- When start_diagnosis returns evidence, analyze it, discuss with the user if needed, and when ready, call submit_diagnosis to file a Jira ticket."
+            "- When start_diagnosis returns evidence, analyze it and present a clear diagnosis summary to the user.\n"
+            "- Then call submit_diagnosis to request Jira ticket creation — the user will be asked to approve or reject before the ticket is filed.\n"
+            "- If the user has rejected the ticket (ticket_hitl_approved is False), acknowledge this gracefully and ask if they want to revise the diagnosis or take a different action."
         )
     )
     llm_with_tools = llm.bind_tools([search_test_details_tool, start_diagnosis, submit_diagnosis])
     filtered_messages = [m for m in state.messages if getattr(m, "name", None) != "system_update"]
     response = await llm_with_tools.ainvoke([system_prompt] + filtered_messages)
+
+    # 2. Guard Output — runs on any textual content, including turns where tool calls are also present,
+    # so hallucinations embedded inside submit_diagnosis arguments are caught.
+    if last_msg and getattr(last_msg, "type", "") == "human" and response.content:
+        output_result = await guardrails.a_guard_output(input=str(last_msg.content), output=str(response.content))
+        if output_result.breached:
+            return {"messages": [AIMessage(content="I'm unable to provide that information.")]}
+
     return {"messages": [response]}
 
 async def tools_node(state: AgentState, config: RunnableConfig) -> dict:
@@ -92,9 +116,15 @@ Failure Details: {failure_input}
 Return only the enhanced query string."""
     response = await llm.ainvoke([HumanMessage(content=prompt)])
     
+    content_val = response.content
+    if isinstance(content_val, list):
+        content_val = " ".join(str(c.get("text", "")) for c in content_val if isinstance(c, dict) and c.get("type") == "text")
+    
+    query_str = str(content_val).strip()
+    
     updates: dict[str, typing.Any] = {
-        "enhanced_query": str(response.content),
-        "messages": [AIMessage(content=f'"{str(response.content)}"', name="system_update")]
+        "enhanced_query": query_str,
+        "messages": [AIMessage(content=f'[Tool Update] Enhanced query: {query_str}', name="system_update")]
     }
     if failure_input and not state.failure_input:
         updates["failure_input"] = failure_input

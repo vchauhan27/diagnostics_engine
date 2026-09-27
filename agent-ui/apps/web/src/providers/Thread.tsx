@@ -44,9 +44,6 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     const client = createClient(apiUrl, getApiKey() ?? undefined);
 
     const threads = await client.threads.search({
-      metadata: {
-        ...getThreadSearchMetadata(assistantId),
-      },
       limit: 100,
     });
 

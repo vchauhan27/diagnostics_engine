@@ -45,12 +45,17 @@ from deepeval.metrics import (
 JUDGE_MODEL = cfg.get_judge_model()
 
 
-async def run_agent(question: str):
-    """Invoke the agent once, with tracing enabled via CallbackHandler."""
+# Single shared event loop for both trajectory and tool-call sections.
+_loop = asyncio.new_event_loop()
+
+
+async def run_agent(question: str, thread_id: str = "agent-eval"):
+    """Invoke the agent once with tracing. Each golden gets a unique thread_id
+    so the LangGraph checkpointer doesn't bleed history between test cases."""
     return await agent.ainvoke(
         AgentState(messages=[HumanMessage(content=question)]),
         config={
-            "configurable": {"thread_id": "agent-eval"},
+            "configurable": {"thread_id": thread_id},
             "callbacks": [CallbackHandler()],
         },
     )
@@ -104,9 +109,10 @@ print("=" * 70)
 print("Diagnostics Engine: Agentic Evaluation (Trajectory)")
 print("=" * 70)
 
-for golden in dataset.evals_iterator(metrics=trajectory_metrics):
-    task = asyncio.create_task(run_agent(golden.input))
-    dataset.evaluate(task)
+# Guide pattern: call the agent synchronously inside evals_iterator so
+# DeepEval can attach the LangGraph trace to each golden's evaluation.
+for i, golden in enumerate(dataset.evals_iterator(metrics=trajectory_metrics)):
+    _loop.run_until_complete(run_agent(golden.input, thread_id=f"traj-eval-{i}"))
 
 print("\n" + "=" * 70)
 print("Diagnostics Engine: Tool-call-based agentic metrics")
@@ -114,11 +120,9 @@ print("=" * 70)
 
 tool_test_cases = []
 
-_global_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(_global_loop)
 
-def get_tool_calls(question: str):
-    result = _global_loop.run_until_complete(run_agent(question))
+def get_tool_calls(question: str, thread_id: str):
+    result = _loop.run_until_complete(run_agent(question, thread_id=thread_id))
     messages = result["messages"] if isinstance(result, dict) else getattr(result, "messages", [])
     
     tools_called = []
@@ -134,11 +138,11 @@ def get_tool_calls(question: str):
         
     return actual_output, tools_called
 
-for item in dataset.goldens:
+for i, item in enumerate(dataset.goldens):
     if not isinstance(item, Golden):
         continue
-    
-    actual_output, tools_called = get_tool_calls(item.input)
+
+    actual_output, tools_called = get_tool_calls(item.input, thread_id=f"tool-eval-{i}")
     
     tool_test_cases.append(
         LLMTestCase(

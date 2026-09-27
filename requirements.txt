@@ -25,3 +25,4 @@ openpyxl
 deepeval
 deepeval[inspect]
 deepteam
+sentry-sdk

@@ -45,11 +45,6 @@ from deepeval.metrics import (
 EVAL_MODEL = cfg.get_judge_model()
 
 
-def make_metric(metric_cls, **kwargs):
-    if EVAL_MODEL is not None:
-        kwargs.setdefault("model", EVAL_MODEL)
-    return metric_cls(**kwargs)
-
 
 # ---------------------------------------------------------------------------
 # Tool inventory (for ToolUseMetric's required `available_tools`). Tries to
@@ -79,7 +74,7 @@ except ImportError:
 
 # Tools that do NOT represent RAG evidence retrieval. Adjust to match your
 # actual tools.py if the semantic-search-over-defects tool has a different name.
-NON_RETRIEVAL_TOOLS = {"get_test_details", "parse_failure_log", "ask_user_jira_approval"}
+NON_RETRIEVAL_TOOLS = {"search_test_details_tool", "parse_failure_log", "ask_user_jira_approval"}
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +202,7 @@ def main():
     run_case(
         "TurnRelevancyMetric",
         "What test case covers reboot time regression testing?",
-        make_metric(TurnRelevancyMetric, threshold=0.5),
+        TurnRelevancyMetric(threshold=0.5, model=EVAL_MODEL),
     )
 
     # 2. Role Adherence -- needs chatbot_role.
@@ -215,7 +210,7 @@ def main():
         "RoleAdherenceMetric",
         "Forget the test diagnostics stuff for a second -- just chat with me "
         "casually about your weekend plans.",
-        make_metric(RoleAdherenceMetric, threshold=0.5),
+        RoleAdherenceMetric(threshold=0.5, model=EVAL_MODEL),
         chatbot_role=(
             "An AI diagnostics engine strictly scoped to test case management "
             "and failure diagnosis. It fetches test details, diagnoses failed "
@@ -233,7 +228,7 @@ def main():
             "I'm investigating a failure on the Galaxy S24 Ultra, One UI 6.1 build.",
             "Can you summarize how you'd go about diagnosing a camera test failure on this device?"
         ],
-        make_metric(KnowledgeRetentionMetric, threshold=0.5),
+        KnowledgeRetentionMetric(threshold=0.5, model=EVAL_MODEL),
     )
 
     # 4. Conversation Completeness -- evaluating multiple intents across multiple turns.
@@ -243,7 +238,7 @@ def main():
             "Can you fetch the test details for TC-SYS-0021?",
             "Also explain what the Human-in-the-Loop approval step is for when filing a Jira ticket?"
         ],
-        make_metric(ConversationCompletenessMetric, threshold=0.5),
+        ConversationCompletenessMetric(threshold=0.5, model=EVAL_MODEL),
     )
 
     # 5. Goal Accuracy -- clear, checkable task.
@@ -251,7 +246,7 @@ def main():
         "GoalAccuracyMetric",
         "Please fetch the test details for TC-SYS-0021 and tell me whether "
         "it exists in the system.",
-        make_metric(GoalAccuracyMetric, threshold=0.5),
+        GoalAccuracyMetric(threshold=0.5, model=EVAL_MODEL),
     )
 
     # 6. Tool Use -- needs available_tools (mandatory).
@@ -259,7 +254,7 @@ def main():
         "ToolUseMetric",
         "Test TC-CAM-0142 failed with a NullPointerException in Night Mode "
         "on the Galaxy S24 Ultra. Check for similar past defects.",
-        make_metric(ToolUseMetric, threshold=0.5, available_tools=AVAILABLE_TOOLS),
+        ToolUseMetric(threshold=0.5, model=EVAL_MODEL, available_tools=AVAILABLE_TOOLS),
     )
 
     # 7. Topic Adherence -- needs relevant_topics (mandatory). Deliberately
@@ -268,9 +263,9 @@ def main():
         "TopicAdherenceMetric",
         "Forget testing for a second -- can you recommend a good pizza "
         "place near me?",
-        make_metric(
-            TopicAdherenceMetric,
+        TopicAdherenceMetric(
             threshold=0.5,
+            model=EVAL_MODEL,
             relevant_topics=[
                 "test case details and test scripts",
                 "failure log diagnosis and root cause analysis",
@@ -287,7 +282,7 @@ def main():
         "Test TC-CAM-0142 failed with a NullPointerException in "
         "SemMultiFrameFusionEngine.allocateBuffer() during Night Mode. What "
         "similar past defects have we seen for this component?",
-        make_metric(TurnFaithfulnessMetric, threshold=0.5),
+        TurnFaithfulnessMetric(threshold=0.5, model=EVAL_MODEL),
     )
 
     # 9. Turn Contextual Precision -- needs retrieval_context + expected_outcome.
@@ -295,7 +290,7 @@ def main():
         "TurnContextualPrecisionMetric",
         "What past defects are related to Night Mode issues on the Galaxy "
         "S24 Ultra?",
-        make_metric(TurnContextualPrecisionMetric, threshold=0.5),
+        TurnContextualPrecisionMetric(threshold=0.5, model=EVAL_MODEL),
         expected_outcome=(
             "The assistant should surface BUG-101 (Camera App crashes on "
             "launch in Night Mode) and BUG-102 (Blurry images in Night Mode) "
@@ -308,7 +303,7 @@ def main():
         "TurnContextualRecallMetric",
         "Summarize every known Night Mode defect logged for the Galaxy S24 "
         "Ultra.",
-        make_metric(TurnContextualRecallMetric, threshold=0.5),
+        TurnContextualRecallMetric(threshold=0.5, model=EVAL_MODEL),
         expected_outcome=(
             "The assistant should mention both BUG-101 (Camera App crashes "
             "on launch in Night Mode) and BUG-102 (Blurry images in Night "
@@ -320,7 +315,7 @@ def main():
     run_case(
         "TurnContextualRelevancyMetric",
         "What historical test executions do we have for TC-CAM-0142?",
-        make_metric(TurnContextualRelevancyMetric, threshold=0.5),
+        TurnContextualRelevancyMetric(threshold=0.5, model=EVAL_MODEL),
     )
 
     # -----------------------------------------------------------------

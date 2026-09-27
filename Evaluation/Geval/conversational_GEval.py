@@ -89,12 +89,20 @@ convo_test_case = ConversationalTestCase(turns=turns)
 
 memory_consistency_metric = ConversationalGEval(
     name="Memory Consistency",
-    criteria=(
-        "Determine whether the assistant remembers information the user "
-        "shared earlier in the conversation (such as the device model, "
-        "build version, or test case ID) and uses it appropriately in "
-        "later replies, rather than ignoring it or asking for it again."
-    ),
+    # Guide recommends evaluation_steps over criteria for more reliable,
+    # consistent scoring across runs (fixed steps vs. one holistic string).
+    evaluation_steps=[
+        "Check whether the assistant correctly recalls facts the user shared "
+        "in earlier turns, such as a device model (e.g. Galaxy S24 Ultra), "
+        "OS build version (e.g. One UI 6.1), or test case ID (e.g. TC-CAM-0142).",
+        "Check whether those recalled facts are used appropriately in later "
+        "replies to provide a more relevant and contextual answer.",
+        "Penalize the assistant if it re-asks for information the user already "
+        "provided, or if it ignores previously stated context when it was "
+        "clearly relevant to the follow-up question.",
+        "Do not penalize the assistant for not volunteering unsolicited facts "
+        "from earlier turns when they were not relevant to the current question.",
+    ],
     evaluation_params=[MultiTurnParams.ROLE, MultiTurnParams.CONTENT],
     threshold=0.7,
     model=JUDGE_MODEL,
