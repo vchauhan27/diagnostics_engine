@@ -20,19 +20,20 @@ load_dotenv()
 #     # )
 
 
-def get_judge_model(): 
+def get_judge_model():
 
-    from deepeval.models import OpenRouterModel
-    return OpenRouterModel(
-        model="nvidia/nemotron-3-super-120b-a12b:free",
-        api_key=os.environ.get("OPENROUTER_API_KEY"),
-        temperature=0    
+    from deepeval.models import GeminiModel
+    return GeminiModel(
+        model="gemini-flash-lite-latest",       # Supports structured JSON output natively — no N/A parse crashes
+        api_key=os.environ.get("GOOGLE_API_KEY"),
+        temperature=0,
     )
 
-    # from deepeval.models import GeminiModel
-    # return GeminiModel(
-    #     model="gemini-flash-lite-latest",
-    #     api_key=os.environ.get("GOOGLE_API_KEY"),
-    #     temperature=0,
+    # Fallback: free-tier OpenRouter (unreliable structured output — causes N/A metric scores)
+    # from deepeval.models import OpenRouterModel
+    # return OpenRouterModel(
+    #     model="nvidia/nemotron-3-super-120b-a12b:free",
+    #     api_key=os.environ.get("OPENROUTER_API_KEY"),
+    #     temperature=0
     # )
  

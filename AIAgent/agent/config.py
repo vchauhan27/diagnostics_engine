@@ -19,11 +19,11 @@ embeddings = OpenAIEmbeddings(
     check_embedding_ctx_length=False,
 )
 
-from langchain_google_genai import ChatGoogleGenerativeAI
-llm = ChatGoogleGenerativeAI(
-    model="gemini-flash-lite-latest",
-    temperature=0,
-)
+from langchain_openrouter import ChatOpenRouter
+llm= ChatOpenRouter(
+         model="dots-studio/dots-3-note-preview:free",
+         temperature=0,
+     )
 
 host = os.environ.get("DB_HOST", "localhost")
 port = os.environ.get("DB_PORT", "5432")

@@ -1,6 +1,9 @@
 import sys
 import os
 import asyncio
+import time
+
+from langchain_core.messages import ToolMessage
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -44,10 +47,13 @@ async def run_agent(question: str, thread_id: str):
     return result["messages"] if isinstance(result, dict) else result.messages
 
 
-# Tools that do NOT represent RAG evidence retrieval (the pgvector search
-# over past defects / code changes). Adjust these names to match
-# AIAgent/agent/tools.py if they differ in your codebase.
-NON_RETRIEVAL_TOOLS = {"search_test_details_tool", "parse_failure_log", "ask_user_jira_approval"}
+# Tools whose ToolMessage responses ARE RAG evidence (pgvector search results).
+# Guide (rag.md): retrieval_context = the actual retrieved text chunks from the
+# retriever. Only ToolMessages from search tools count — not control/status messages.
+RETRIEVAL_TOOLS = {"search_historical_failures", "search_code_changes"}
+
+# Kept for backward-compat (used in retrieval_context guard below).
+NON_RETRIEVAL_TOOLS = {"search_test_details_tool", "parse_failure_log", "ask_user_jira_approval", "system_update"}
 
 
 # ---------------------------------------------------------
@@ -81,12 +87,15 @@ TEST_CASES = [
 # Metrics -- all share the same config, so build them in a loop
 # ---------------------------------------------------------
 
+# 15-second sleep between each metric to avoid Gemini API rate limits.
+_INTER_METRIC_SLEEP = 15
+
 metrics = [
-    AnswerRelevancyMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False),
-    FaithfulnessMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False),
-    ContextualRelevancyMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False),
-    ContextualPrecisionMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False),
-    ContextualRecallMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False),
+    ("Answer Relevancy",        AnswerRelevancyMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False)),
+    ("Faithfulness",            FaithfulnessMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False)),
+    ("Contextual Relevancy",    ContextualRelevancyMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False)),
+    ("Contextual Precision",    ContextualPrecisionMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False)),
+    ("Contextual Recall",       ContextualRecallMetric(threshold=0.7, model=JUDGE_MODEL, include_reason=True, async_mode=False)),
 ]
 
 async def main():
@@ -95,12 +104,18 @@ async def main():
     for i, item in enumerate(TEST_CASES):
         messages = await run_agent(item["input"], thread_id=f"rag-eval-{i}")
 
+        # Guide (rag.md): retrieval_context is the list of text chunks the
+        # retriever pulled. Only ToolMessage responses from the RAG search tools
+        # count — not AIMessage system_update strings or test-detail lookups.
         retrieval_context = [
             str(m.content) for m in messages
-            if getattr(m, "name", None) and m.name not in NON_RETRIEVAL_TOOLS
+            if isinstance(m, ToolMessage) and getattr(m, "name", None) in RETRIEVAL_TOOLS
         ]
 
-        actual_output = messages[-1].content
+        # Filter system_update progress messages before taking the final output
+        # so [Tool Update] strings are never treated as the agent's answer.
+        visible = [m for m in messages if getattr(m, "name", None) != "system_update"]
+        actual_output = visible[-1].content if visible else ""
         if isinstance(actual_output, list):
             actual_output = " ".join(b.get("text", "") for b in actual_output if isinstance(b, dict))
 
@@ -121,11 +136,18 @@ async def main():
         )
 
     if test_cases:
-        evaluate(
-            test_cases=test_cases,
-            metrics=metrics,
-            async_config=AsyncConfig(run_async=False, throttle_value=1, max_concurrent=1),
-        )
+        # Run each metric individually with a sleep between them to avoid
+        # hitting the Gemini API rate limit.
+        for idx, (metric_name, metric) in enumerate(metrics):
+            print(f"\n[{idx+1}/{len(metrics)}] Evaluating: {metric_name}")
+            evaluate(
+                test_cases=test_cases,
+                metrics=[metric],
+                async_config=AsyncConfig(run_async=False, throttle_value=1, max_concurrent=1),
+            )
+            if idx < len(metrics) - 1:
+                print(f"  Sleeping {_INTER_METRIC_SLEEP}s to avoid API rate limit...")
+                time.sleep(_INTER_METRIC_SLEEP)
     else:
         print("No test cases had retrieval context to evaluate against.")
 

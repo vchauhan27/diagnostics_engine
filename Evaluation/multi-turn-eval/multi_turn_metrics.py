@@ -8,6 +8,7 @@ same thread_id.
 import sys
 import os
 import asyncio
+import time
 import uuid
 
 if sys.platform == 'win32':
@@ -46,35 +47,50 @@ EVAL_MODEL = cfg.get_judge_model()
 
 
 
-# ---------------------------------------------------------------------------
-# Tool inventory (for ToolUseMetric's required `available_tools`). Tries to
-# import the real tool objects; falls back to name-only ToolCalls if your
-# AIAgent/agent/tools.py exposes them under different names -- update the
-# import and the fallback list below to match.
-# ---------------------------------------------------------------------------
-
+# Tool inventory (for ToolUseMetric's required `available_tools`).
+# FIX: Updated to match the ACTUAL tools registered in the agent (nodes.py).
+# parse_failure_log and ask_user_jira_approval do not exist in the codebase;
+# the agent exposes search_test_details_tool, start_diagnosis, submit_diagnosis.
 try:
     from AIAgent.agent.tools import (
         get_test_details,
         search_code_changes,
-        parse_failure_log,
-        ask_user_jira_approval,
+    )
+    from AIAgent.agent.nodes import (
+        search_test_details_tool,
+        start_diagnosis,
+        submit_diagnosis,
     )
     AVAILABLE_TOOLS = [
         ToolCall(name=t.name, input_parameters={})
-        for t in (get_test_details, search_code_changes, parse_failure_log, ask_user_jira_approval)
+        for t in (get_test_details, search_code_changes,
+                  search_test_details_tool, start_diagnosis, submit_diagnosis)
     ]
 except ImportError:
     AVAILABLE_TOOLS = [
         ToolCall(name="get_test_details", input_parameters={}),
         ToolCall(name="search_code_changes", input_parameters={}),
-        ToolCall(name="parse_failure_log", input_parameters={}),
-        ToolCall(name="ask_user_jira_approval", input_parameters={}),
+        ToolCall(name="search_test_details_tool", input_parameters={}),
+        ToolCall(name="start_diagnosis", input_parameters={}),
+        ToolCall(name="submit_diagnosis", input_parameters={}),
     ]
 
-# Tools that do NOT represent RAG evidence retrieval. Adjust to match your
-# actual tools.py if the semantic-search-over-defects tool has a different name.
-NON_RETRIEVAL_TOOLS = {"search_test_details_tool", "parse_failure_log", "ask_user_jira_approval"}
+# Tools / message names that are NOT RAG evidence retrieval.
+# FIX: Added "system_update" — nodes.py injects AIMessage(name="system_update")
+# progress messages that must not pollute the Turn retrieval_context used by
+# faithfulness and contextual metrics.
+NON_RETRIEVAL_TOOLS = {"search_test_details_tool", "parse_failure_log", "ask_user_jira_approval", "system_update"}
+
+# Description registry for ToolUseMetric — guide requires description on ToolCall
+# so the LLM judge can assess whether the right tool was chosen.
+TOOL_DESCRIPTIONS = {
+    "get_test_details":          "Fetch structured details for a given test case ID from the TMS.",
+    "search_code_changes":       "Search for recent code changes related to a component or error.",
+    "search_historical_failures": "Search for historical failure records matching an error pattern.",
+    "search_test_details_tool":  "Look up test case details by ID (agent-facing wrapper).",
+    "start_diagnosis":           "Start the background research loop to gather evidence and diagnose a failure.",
+    "submit_diagnosis":          "Submit the final diagnosis and create a Jira ticket.",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +160,12 @@ def build_all_turns(messages):
             if getattr(msg, "tool_calls", None):
                 for tc in msg.tool_calls:
                     tools_called.append(
-                        ToolCall(name=tc["name"], input_parameters=tc.get("args", {}) or {})
+                        ToolCall(
+                            name=tc["name"],
+                            # Guide: description helps ToolUseMetric judge tool selection quality
+                            description=TOOL_DESCRIPTIONS.get(tc["name"], ""),
+                            input_parameters=tc.get("args", {}) or {},
+                        )
                     )
             if msg.content:
                 final_content = msg.content
@@ -197,6 +218,8 @@ def run_case(label, questions, metric, **test_case_kwargs):
 
 def main():
     print("Running multi-turn DeepEval metrics against the AI Diagnostics Engine...")
+    # 15s between each metric to avoid hitting the Gemini API rate limit
+    _INTER_METRIC_SLEEP = 15
 
     # 1. Turn Relevancy -- referenceless, just needs turns.
     run_case(
@@ -204,6 +227,7 @@ def main():
         "What test case covers reboot time regression testing?",
         TurnRelevancyMetric(threshold=0.5, model=EVAL_MODEL),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 2. Role Adherence -- needs chatbot_role.
     run_case(
@@ -219,6 +243,7 @@ def main():
             "or discuss anything outside test diagnostics."
         ),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 3. Knowledge Retention -- checks the assistant doesn't re-ask for
     #    facts the user already stated in previous turns.
@@ -230,6 +255,7 @@ def main():
         ],
         KnowledgeRetentionMetric(threshold=0.5, model=EVAL_MODEL),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 4. Conversation Completeness -- evaluating multiple intents across multiple turns.
     run_case(
@@ -240,14 +266,22 @@ def main():
         ],
         ConversationCompletenessMetric(threshold=0.5, model=EVAL_MODEL),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
-    # 5. Goal Accuracy -- clear, checkable task.
+    # 5. Goal Accuracy -- clear, checkable task with expected_outcome anchor.
+    # Guide: providing expected_outcome on ConversationalTestCase anchors
+    # the GoalAccuracyMetric evaluation against a known correct end state.
     run_case(
         "GoalAccuracyMetric",
         "Please fetch the test details for TC-SYS-0021 and tell me whether "
         "it exists in the system.",
         GoalAccuracyMetric(threshold=0.5, model=EVAL_MODEL),
+        expected_outcome=(
+            "The agent fetches and returns the test details for TC-SYS-0021, "
+            "and confirms whether the test case exists in the system."
+        ),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 6. Tool Use -- needs available_tools (mandatory).
     run_case(
@@ -256,6 +290,7 @@ def main():
         "on the Galaxy S24 Ultra. Check for similar past defects.",
         ToolUseMetric(threshold=0.5, model=EVAL_MODEL, available_tools=AVAILABLE_TOOLS),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 7. Topic Adherence -- needs relevant_topics (mandatory). Deliberately
     #    off-topic question to see whether the agent correctly declines.
@@ -275,6 +310,7 @@ def main():
             ],
         ),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 8. Turn Faithfulness -- needs retrieval_context on the turn.
     run_case(
@@ -284,6 +320,7 @@ def main():
         "similar past defects have we seen for this component?",
         TurnFaithfulnessMetric(threshold=0.5, model=EVAL_MODEL),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 9. Turn Contextual Precision -- needs retrieval_context + expected_outcome.
     run_case(
@@ -297,6 +334,7 @@ def main():
             "as the most relevant past defects."
         ),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 10. Turn Contextual Recall -- needs retrieval_context + expected_outcome.
     run_case(
@@ -310,6 +348,7 @@ def main():
             "Mode)."
         ),
     )
+    time.sleep(_INTER_METRIC_SLEEP)
 
     # 11. Turn Contextual Relevancy -- needs retrieval_context only.
     run_case(
