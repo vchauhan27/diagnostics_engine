@@ -29,7 +29,8 @@ guardrails = Guardrails(
             "telemetry",
             "queries related to fetching or checking test details",
             "approving, declining, or responding to human-in-the-loop requests",
-            "general conversational acknowledgments (yes, no, ok, cancel, stop, thank you, hi, hey, hello, )"
+            "general conversational acknowledgments (yes, no, ok, cancel, stop, thank you, hi, hey, hello, )",
+            "generic conversational questions (why, how, what, when, where)"
         ])
     ],
     output_guards=[

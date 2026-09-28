@@ -63,21 +63,40 @@ async def agent_node(state: AgentState, config: RunnableConfig) -> dict:
             "You are the central Brain of an AI Diagnostics Engine. "
             "Your job is to interact with the user, understand test failures, and route tasks.\n"
             "- If the user asks for test details, use the search_test_details_tool.\n"
-            "- If the user wants to diagnose a failure, first ensure you have the required details (test case id, error message, etc.). Ask the user if missing.\n"
-            "- Once you have the details, call start_diagnosis to launch the research loop.\n"
+            "- If the user wants to diagnose a failure, first ensure you have the required details (test case id AND error message/stack trace). Ask the user if any are missing. DO NOT make up or hallucinate error messages or stack traces if the user hasn't provided them!\n"
+            "- Once you have the REAL details provided by the user, call start_diagnosis to launch the research loop.\n"
             "- When start_diagnosis returns evidence, analyze it and present a clear diagnosis summary to the user.\n"
-            "- Then call submit_diagnosis to request Jira ticket creation — the user will be asked to approve or reject before the ticket is filed.\n"
+            "- Immediately after or alongside presenting the summary, you MUST call the submit_diagnosis tool to request Jira ticket creation — the user will be asked to approve or reject it.\n"
             "- If the user has rejected the ticket (ticket_hitl_approved is False), acknowledge this gracefully and ask if they want to revise the diagnosis or take a different action."
         )
     )
     llm_with_tools = llm.bind_tools([search_test_details_tool, start_diagnosis, submit_diagnosis])
     filtered_messages = [m for m in state.messages if getattr(m, "name", None) != "system_update"]
+    
+    # FIX: Gemini crashes if an AIMessage has tool calls but not ALL of them are answered by ToolMessages.
+    # Because our custom route_agent only follows the FIRST tool call, any additional tool calls in the same turn are left hanging.
+    # We must append dummy ToolMessages for them so Gemini considers the turn complete.
+    last_ai_msg = None
+    for i in range(len(filtered_messages)-1, -1, -1):
+        if isinstance(filtered_messages[i], AIMessage):
+            last_ai_msg = filtered_messages[i]
+            break
+            
+    if last_ai_msg and getattr(last_ai_msg, "tool_calls", None):
+        # Find which tool calls have been answered
+        answered_ids = {getattr(m, "tool_call_id", None) for m in filtered_messages if isinstance(m, ToolMessage)}
+        for tc in getattr(last_ai_msg, "tool_calls", []):
+            if tc["id"] not in answered_ids:
+                filtered_messages.append(ToolMessage(content="Tool execution skipped by graph routing.", tool_call_id=tc["id"]))
+
     response = await llm_with_tools.ainvoke([system_prompt] + filtered_messages)
 
     # 2. Guard Output — runs on any textual content, including turns where tool calls are also present,
     # so hallucinations embedded inside submit_diagnosis arguments are caught.
-    if last_msg and getattr(last_msg, "type", "") == "human" and response.content:
-        output_result = await guardrails.a_guard_output(input=str(last_msg.content), output=str(response.content))
+    if last_msg and getattr(last_msg, "type", "") == "human" and response.content and not response.tool_calls:
+        # Pass the full conversation history to the output guard so it doesn't falsely flag memory/context as hallucinations
+        full_context = "\n".join([f"{getattr(m, 'type', 'unknown')}: {str(m.content)}" for m in state.messages if m.content])
+        output_result = await guardrails.a_guard_output(input=full_context, output=str(response.content))
         if output_result.breached:
             return {"messages": [AIMessage(content="I'm unable to provide that information.")]}
 
